@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+"""The setup script."""
+
+# Third party modules
+from setuptools import setup
+
+setup(
+    install_requires=[
+        "bs4",
+        "click",
+        "requests",
+        "sqlalchemy",
+        "python-magic",
+        "pillow",
+        "pymupdf",
+    ]
+)
