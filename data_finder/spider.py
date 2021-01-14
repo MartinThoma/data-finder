@@ -33,7 +33,17 @@ def main(initial_url=None):
     while page:
         parse_page = True
         print(page.url)
-        response = requests.get(page.url)
+        try:
+            response = requests.get(page.url)
+        except (
+            requests.exceptions.SSLError,
+            requests.exceptions.TooManyRedirects,
+            requests.exceptions.ConnectionError,
+        ):
+            page.was_parsed()
+            session.commit()
+            page = data.get_next_page(session)
+            continue
         page.size = len(response.content)
         page.was_parsed()
         if "content-type" not in response.headers:
@@ -42,7 +52,7 @@ def main(initial_url=None):
             print(response.headers)
         else:
             page.content_type = response.headers["content-type"]
-        if "text" not in page.content_type:
+        if page.content_type is None or "text" not in page.content_type:
             parse_page = False
             file_obj = data.create_file(page, response.content)
             session.add(file_obj)
@@ -68,8 +78,12 @@ def main(initial_url=None):
                 if not data.is_in_db(session, url):
                     if url.startswith("mailto"):
                         page = EMail(address=url)
-                    else:
+                    elif url.startswith("http"):
                         page = Page(url=url)
+                    else:
+                        with open("unknown-shema.txt", "w+") as fp:
+                            fp.write(url)
+                        continue
                     session.add(page)
                     session.commit()
         page = data.get_next_page(session)

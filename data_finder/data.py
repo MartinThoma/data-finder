@@ -8,6 +8,7 @@ import magic
 from PIL import Image
 from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.expression import func
 
 Base = declarative_base()
 mime = magic.Magic(mime=True)
@@ -75,14 +76,17 @@ def initialize(engine):
 def get_next_page(session):
     query = (
         session.query(Page)
-        .order_by(Page.last_checked)
+        .order_by(func.random())  # Page.last_checked
         .filter(Page.last_checked == None)
     )
     return query.first()
 
 
 def is_in_db(session, url):
-    query = session.query(Page).filter(Page.url == url)
+    if url.startswith("mailto"):
+        query = session.query(EMail).filter(EMail.address == url)
+    else:
+        query = session.query(Page).filter(Page.url == url)
     is_in = query.first() is not None
     return is_in
 
